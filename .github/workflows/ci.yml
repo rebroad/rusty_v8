@@ -12,6 +12,7 @@ permissions: write-all
 
 jobs:
   build:
+    if: github.repository == 'denoland/rusty_v8'
     name: ${{ matrix.config.variant }} ${{ matrix.config.target }} ${{ matrix.config.v8_enable_pointer_compression && 'ptrcomp' || '' }} ${{ matrix.config.simdutf && 'simdutf' || '' }}
     runs-on: ${{ matrix.config.os }}
     timeout-minutes: 180
@@ -339,6 +340,7 @@ jobs:
           path: target/src_binding${{ env.FEATURES_SUFFIX }}_${{ matrix.config.variant }}_${{ matrix.config.target }}.rs
 
   build-asan:
+    if: github.repository == 'denoland/rusty_v8'
     name: asan aarch64-apple-darwin
     runs-on: macos-15
     timeout-minutes: 180
@@ -417,6 +419,7 @@ jobs:
           V8_FROM_SOURCE=true RUSTFLAGS="-C opt-level=1 -Zsanitizer=address" cargo +nightly -Z build-std nextest run --lib --bins --tests -v --cargo-verbose --cargo-verbose --target aarch64-apple-darwin
 
   build-windows-arm64:
+    if: github.repository == 'denoland/rusty_v8'
     name: release aarch64-pc-windows-msvc
     runs-on: ${{ github.repository == 'denoland/rusty_v8' && 'windows-2022-xxl' || 'windows-2022' }}
     timeout-minutes: 180
@@ -519,6 +522,7 @@ jobs:
           retention-days: 1
 
   build-windows-arm64-simdutf:
+    if: github.repository == 'denoland/rusty_v8'
     name: release aarch64-pc-windows-msvc simdutf
     runs-on: ${{ github.repository == 'denoland/rusty_v8' && 'windows-2022-xxl' || 'windows-2022' }}
     timeout-minutes: 180
@@ -612,6 +616,7 @@ jobs:
           path: target/src_binding_simdutf_release_aarch64-pc-windows-msvc.rs
 
   test-windows-arm64:
+    if: github.repository == 'denoland/rusty_v8'
     name: test aarch64-pc-windows-msvc
     needs: build-windows-arm64
     runs-on: ${{ github.repository == 'denoland/rusty_v8' && 'windows-11-arm-xl' || 'windows-11-arm' }}
