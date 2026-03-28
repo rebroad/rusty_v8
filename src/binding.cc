@@ -4343,8 +4343,11 @@ RustObj* cppgc__make_garbage_collectable(v8::CppHeap* heap, size_t size,
                                                 cppgc::AdditionalBytes(size));
   }
   if (alignment <= 16) {
-    return cppgc::MakeGarbageCollected<RustObjButAlign16>(
-        heap->GetAllocationHandle(), cppgc::AdditionalBytes(size));
+    if constexpr (alignof(std::max_align_t) >= 16) {
+      return cppgc::MakeGarbageCollected<RustObjButAlign16>(
+          heap->GetAllocationHandle(), cppgc::AdditionalBytes(size));
+    }
+    return nullptr;
   }
   return nullptr;
 }

@@ -361,9 +361,10 @@ pub unsafe fn make_garbage_collected<T: GarbageCollected + 'static>(
   heap: &Heap,
   obj: T,
 ) -> UnsafePtr<T> {
+  const MAX_CPPGC_ALIGNMENT: usize =
+    if cfg!(target_arch = "arm") { 8 } else { 16 };
   const {
-    // max alignment in cppgc is 16
-    assert!(std::mem::align_of::<T>() <= 16);
+    assert!(std::mem::align_of::<T>() <= MAX_CPPGC_ALIGNMENT);
     assert!(
       std::mem::offset_of!(RustObjConcrete<T>, dynamic)
         == std::mem::offset_of!(RustObjConcrete<()>, dynamic)
