@@ -21,6 +21,7 @@ jobs:
       TARGET: armv7-unknown-linux-gnueabihf
       LIB_NAME: librusty_v8_release_armv7-unknown-linux-gnueabihf.a.gz
       BINDING_NAME: src_binding_release_armv7-unknown-linux-gnueabihf.rs
+      NINJA_STATUS: "[%f/%t %es] "
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -50,10 +51,33 @@ jobs:
         run: |
           set -euo pipefail
           python3 build/linux/sysroot_scripts/install-sysroot.py --arch=amd64
-          cargo build --release --target "${TARGET}"
+          cargo build -vv --release --target "${TARGET}"
+
+          kill "${heartbeat_pid}" >/dev/null 2>&1 || true
+          trap - EXIT
           gzip -9c "target/${TARGET}/release/gn_out/obj/librusty_v8.a" > "${LIB_NAME}"
           cp "target/${TARGET}/release/gn_out/src_binding.rs" "${BINDING_NAME}"
           ls -lh "${LIB_NAME}" "${BINDING_NAME}"
+
+      - name: Upload armv7 build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: armv7-release-assets
+          path: |
+            librusty_v8_release_armv7-unknown-linux-gnueabihf.a.gz
+            src_binding_release_armv7-unknown-linux-gnueabihf.rs
+          if-no-files-found: error
+
+  publish-assets:
+    name: Publish armv7 release assets
+    needs: build-armv7
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Download armv7 build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: armv7-release-assets
+          path: .
 
       - name: Ensure release exists
         env:
