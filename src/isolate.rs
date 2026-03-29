@@ -2370,10 +2370,9 @@ const _: () = {
     size_of::<TypeId>() == size_of::<u64>()
       || size_of::<TypeId>() == size_of::<u128>()
   );
-  assert!(
-    align_of::<TypeId>() == align_of::<u64>()
-      || align_of::<TypeId>() == align_of::<u128>()
-  );
+  // `TypeIdHasher` observes TypeId values through `Hash::hash` -> `write_u64`,
+  // so strict alignment assumptions are unnecessary here and can fail on
+  // some 32-bit targets.
 };
 
 pub(crate) struct RawSlot {
