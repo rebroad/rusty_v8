@@ -46,7 +46,8 @@ jobs:
           mkdir -p "${SYSROOT}/usr/include" "${SYSROOT}/usr/lib"
           cp -a /usr/include/x86_64-linux-musl/. "${SYSROOT}/usr/include/"
           cp -a /usr/lib/x86_64-linux-musl/. "${SYSROOT}/usr/lib/"
-          cp -a /usr/include/linux /usr/include/asm-generic /usr/include/x86_64-linux-gnu/asm /usr/include/x86_64-linux-gnu/sys "${SYSROOT}/usr/include/"
+          cp -a /usr/include/linux /usr/include/asm-generic /usr/include/x86_64-linux-gnu/asm "${SYSROOT}/usr/include/"
+          cp -a /usr/include/x86_64-linux-gnu/sys/cdefs.h "${SYSROOT}/usr/include/sys/cdefs.h"
           echo "CARGO_TARGET_X86_64_UNKNOWN_LINUX_MUSL_LINKER=musl-gcc" >> "${GITHUB_ENV}"
           echo "CC_x86_64_unknown_linux_musl=musl-gcc" >> "${GITHUB_ENV}"
           echo "RUSTY_V8_MUSL_SYSROOT=${SYSROOT}" >> "${GITHUB_ENV}"
@@ -73,10 +74,9 @@ jobs:
     timeout-minutes: 240
     env:
       V8_FROM_SOURCE: true
-      EXTRA_GN_ARGS: v8_enable_pointer_compression_shared_cage=false
       TARGET: armv7-unknown-linux-gnueabihf
-      LIB_NAME: librusty_v8_ptrcomp_sandbox_release_armv7-unknown-linux-gnueabihf.a.gz
-      BINDING_NAME: src_binding_ptrcomp_sandbox_release_armv7-unknown-linux-gnueabihf.rs
+      LIB_NAME: librusty_v8_release_armv7-unknown-linux-gnueabihf.a.gz
+      BINDING_NAME: src_binding_release_armv7-unknown-linux-gnueabihf.rs
     steps:
       - uses: actions/checkout@v4
         with:
@@ -106,7 +106,7 @@ jobs:
       - name: Build sandbox release artifacts
         run: |
           set -euo pipefail
-          cargo build -vv --locked --release --target "${TARGET}" --features v8_enable_sandbox
+          cargo build -vv --locked --release --target "${TARGET}"
           gzip -9c "target/${TARGET}/release/gn_out/obj/librusty_v8.a" > "${LIB_NAME}"
           cp "target/${TARGET}/release/gn_out/src_binding.rs" "${BINDING_NAME}"
       - uses: actions/upload-artifact@v4
