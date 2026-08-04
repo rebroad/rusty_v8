@@ -46,7 +46,7 @@ jobs:
           mkdir -p "${SYSROOT}/usr/include" "${SYSROOT}/usr/lib"
           cp -a /usr/include/x86_64-linux-musl/. "${SYSROOT}/usr/include/"
           cp -a /usr/lib/x86_64-linux-musl/. "${SYSROOT}/usr/lib/"
-          cp -a /usr/include/linux /usr/include/asm-generic /usr/include/x86_64-linux-gnu/asm "${SYSROOT}/usr/include/"
+          cp -a /usr/include/linux /usr/include/asm-generic /usr/include/x86_64-linux-gnu/asm /usr/include/x86_64-linux-gnu/sys "${SYSROOT}/usr/include/"
           echo "CARGO_TARGET_X86_64_UNKNOWN_LINUX_MUSL_LINKER=musl-gcc" >> "${GITHUB_ENV}"
           echo "CC_x86_64_unknown_linux_musl=musl-gcc" >> "${GITHUB_ENV}"
           echo "RUSTY_V8_MUSL_SYSROOT=${SYSROOT}" >> "${GITHUB_ENV}"
