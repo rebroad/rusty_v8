@@ -73,6 +73,7 @@ jobs:
     timeout-minutes: 240
     env:
       V8_FROM_SOURCE: true
+      EXTRA_GN_ARGS: v8_enable_pointer_compression_shared_cage=false
       TARGET: armv7-unknown-linux-gnueabihf
       LIB_NAME: librusty_v8_ptrcomp_sandbox_release_armv7-unknown-linux-gnueabihf.a.gz
       BINDING_NAME: src_binding_ptrcomp_sandbox_release_armv7-unknown-linux-gnueabihf.rs
