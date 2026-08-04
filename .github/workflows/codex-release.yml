@@ -77,51 +77,9 @@ jobs:
             ${{ env.BINDING_NAME }}
           if-no-files-found: error
 
-  build-armv7:
-    name: Build sandbox ARMv7
-    runs-on: ubuntu-22.04
-    timeout-minutes: 240
-    env:
-      V8_FROM_SOURCE: true
-      TARGET: armv7-unknown-linux-gnueabihf
-      LIB_NAME: librusty_v8_release_armv7-unknown-linux-gnueabihf.a.gz
-      BINDING_NAME: src_binding_release_armv7-unknown-linux-gnueabihf.rs
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          submodules: recursive
-      - uses: dsherret/rust-toolchain-file@v1
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-      - name: Install ARMv7 cross toolchain
-        run: |
-          set -euo pipefail
-          rustup target add "${TARGET}"
-          sudo apt-get update -y
-          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-            gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf pkg-config
-          echo "CARGO_TARGET_ARMV7_UNKNOWN_LINUX_GNUEABIHF_LINKER=arm-linux-gnueabihf-gcc" >> "${GITHUB_ENV}"
-          echo "CC_armv7_unknown_linux_gnueabihf=arm-linux-gnueabihf-gcc" >> "${GITHUB_ENV}"
-      - name: Install V8 sysroot
-        run: python3 build/linux/sysroot_scripts/install-sysroot.py --arch=amd64
-      - name: Build sandbox release artifacts
-        run: |
-          set -euo pipefail
-          cargo build -vv --locked --release --target "${TARGET}"
-          gzip -9c "target/${TARGET}/release/gn_out/obj/librusty_v8.a" > "${LIB_NAME}"
-          cp "target/${TARGET}/release/gn_out/src_binding.rs" "${BINDING_NAME}"
-      - uses: actions/upload-artifact@v4
-        with:
-          name: codex-armv7-assets
-          path: |
-            ${{ env.LIB_NAME }}
-            ${{ env.BINDING_NAME }}
-          if-no-files-found: error
-
   publish:
     name: Publish Codex Rusty V8 assets
-    needs: [build-x64-musl, build-armv7]
+    needs: build-x64-musl
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/download-artifact@v4
