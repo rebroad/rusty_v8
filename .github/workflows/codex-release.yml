@@ -47,7 +47,16 @@ jobs:
           cp -a /usr/include/x86_64-linux-musl/. "${SYSROOT}/usr/include/"
           cp -a /usr/lib/x86_64-linux-musl/. "${SYSROOT}/usr/lib/"
           cp -a /usr/include/linux /usr/include/asm-generic /usr/include/x86_64-linux-gnu/asm "${SYSROOT}/usr/include/"
-          cp -a /usr/include/x86_64-linux-gnu/sys/cdefs.h "${SYSROOT}/usr/include/sys/cdefs.h"
+          cp -a /usr/include/x86_64-linux-gnu/sys/cdefs.h "${SYSROOT}/usr/include/sys/cdefs-glibc.h"
+          cat > "${SYSROOT}/usr/include/sys/cdefs.h" <<'EOF'
+          #ifndef _RUSTY_V8_MUSL_COMPAT_CDEFS_H
+          #define _RUSTY_V8_MUSL_COMPAT_CDEFS_H
+          #define __GNUC_PREREQ(maj, min) ((__GNUC__ << 16) + __GNUC_MINOR__ >= ((maj) << 16) + (min))
+          #define __glibc_clang_prereq(maj, min) (__clang_major__ > (maj) || (__clang_major__ == (maj) && __clang_minor__ >= (min)))
+          #define __glibc_has_attribute(attr) __has_attribute(attr)
+          #include "cdefs-glibc.h"
+          #endif
+          EOF
           echo "CARGO_TARGET_X86_64_UNKNOWN_LINUX_MUSL_LINKER=musl-gcc" >> "${GITHUB_ENV}"
           echo "CC_x86_64_unknown_linux_musl=musl-gcc" >> "${GITHUB_ENV}"
           echo "RUSTY_V8_MUSL_SYSROOT=${SYSROOT}" >> "${GITHUB_ENV}"
@@ -90,17 +99,10 @@ jobs:
           set -euo pipefail
           rustup target add "${TARGET}"
           sudo apt-get update -y
-          curl -fsSL https://apt.llvm.org/llvm-snapshot.gpg.key \
-            | gpg --dearmor \
-            | sudo tee /etc/apt/trusted.gpg.d/llvm-snapshot.gpg >/dev/null
-          echo "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-19 main" \
-            | sudo tee /etc/apt/sources.list.d/llvm-toolchain-jammy-19.list >/dev/null
-          sudo apt-get update -y
           sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-            clang-19 libclang-19-dev gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf pkg-config
+            gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf pkg-config
           echo "CARGO_TARGET_ARMV7_UNKNOWN_LINUX_GNUEABIHF_LINKER=arm-linux-gnueabihf-gcc" >> "${GITHUB_ENV}"
           echo "CC_armv7_unknown_linux_gnueabihf=arm-linux-gnueabihf-gcc" >> "${GITHUB_ENV}"
-          echo "LIBCLANG_PATH=/usr/lib/llvm-19/lib" >> "${GITHUB_ENV}"
       - name: Install V8 sysroot
         run: python3 build/linux/sysroot_scripts/install-sysroot.py --arch=amd64
       - name: Build sandbox release artifacts
