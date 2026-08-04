@@ -47,7 +47,7 @@ jobs:
           cp -a /usr/include/x86_64-linux-musl/. "${SYSROOT}/usr/include/"
           cp -a /usr/lib/x86_64-linux-musl/. "${SYSROOT}/usr/lib/"
           cp -a /usr/include/linux /usr/include/asm-generic /usr/include/x86_64-linux-gnu/asm "${SYSROOT}/usr/include/"
-          cp -an /usr/include/x86_64-linux-gnu/bits/. "${SYSROOT}/usr/include/bits/"
+          cp -a /usr/include/x86_64-linux-gnu/bits/wordsize.h "${SYSROOT}/usr/include/bits/"
           cat > "${SYSROOT}/usr/include/sys/cdefs.h" <<'EOF'
           #ifndef _RUSTY_V8_MUSL_COMPAT_CDEFS_H
           #define _RUSTY_V8_MUSL_COMPAT_CDEFS_H
