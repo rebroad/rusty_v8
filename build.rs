@@ -445,7 +445,6 @@ fn build_v8(is_asan: bool) {
   if target_env == "musl" && target_os == "linux" {
     gn_args.push("use_musl=true".to_string());
     gn_args.push("use_allocator_shim=false".to_string());
-    gn_args.push("use_partition_alloc=false".to_string());
     // V8-as-a-library has no glib dependency; skip it so a musl target_sysroot
     // doesn't send pkg-config looking for glib inside the sysroot.
     gn_args.push("use_glib=false".to_string());
