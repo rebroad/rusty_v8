@@ -94,8 +94,8 @@ jobs:
           RELEASE_TAG: ${{ inputs.release_tag }}
         run: |
           set -euo pipefail
-          if ! gh release view "${RELEASE_TAG}" >/dev/null 2>&1; then
-            gh release create "${RELEASE_TAG}" --title "${RELEASE_TAG}" --notes "Codex sandbox Rusty V8 artifacts"
+          if ! gh release view "${RELEASE_TAG}" -R "${GITHUB_REPOSITORY}" >/dev/null 2>&1; then
+            gh release create "${RELEASE_TAG}" -R "${GITHUB_REPOSITORY}" --title "${RELEASE_TAG}" --notes "Codex sandbox Rusty V8 artifacts"
           fi
       - name: Upload release assets
         uses: softprops/action-gh-release@v2
