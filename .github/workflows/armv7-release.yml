@@ -19,8 +19,10 @@ jobs:
     env:
       V8_FROM_SOURCE: true
       TARGET: armv7-unknown-linux-gnueabihf
-      LIB_NAME: librusty_v8_release_armv7-unknown-linux-gnueabihf.a.gz
-      BINDING_NAME: src_binding_release_armv7-unknown-linux-gnueabihf.rs
+      RELEASE_LIB_NAME: librusty_v8_release_armv7-unknown-linux-gnueabihf.a.gz
+      RELEASE_BINDING_NAME: src_binding_release_armv7-unknown-linux-gnueabihf.rs
+      LIB_NAME: librusty_v8_ptrcomp_sandbox_release_armv7-unknown-linux-gnueabihf.a.gz
+      BINDING_NAME: src_binding_ptrcomp_sandbox_release_armv7-unknown-linux-gnueabihf.rs
       NINJA_STATUS: "[%f/%t %es] "
     steps:
       - name: Checkout
@@ -51,10 +53,14 @@ jobs:
         run: |
           set -euo pipefail
           python3 build/linux/sysroot_scripts/install-sysroot.py --arch=amd64
-          cargo build -vv --release --target "${TARGET}"
+          cargo build -vv --locked --release --target "${TARGET}"
+          gzip -9c "target/${TARGET}/release/gn_out/obj/librusty_v8.a" > "${RELEASE_LIB_NAME}"
+          cp "target/${TARGET}/release/gn_out/src_binding.rs" "${RELEASE_BINDING_NAME}"
+          cargo build -vv --locked --release --target "${TARGET}" --features v8_enable_sandbox
           gzip -9c "target/${TARGET}/release/gn_out/obj/librusty_v8.a" > "${LIB_NAME}"
           cp "target/${TARGET}/release/gn_out/src_binding.rs" "${BINDING_NAME}"
-          ls -lh "${LIB_NAME}" "${BINDING_NAME}"
+          sha256sum "${LIB_NAME}" "${BINDING_NAME}" > "rusty_v8_ptrcomp_sandbox_release_${TARGET}.sha256"
+          ls -lh "${RELEASE_LIB_NAME}" "${RELEASE_BINDING_NAME}" "${LIB_NAME}" "${BINDING_NAME}" "rusty_v8_ptrcomp_sandbox_release_${TARGET}.sha256"
 
       - name: Upload armv7 build artifacts
         uses: actions/upload-artifact@v4
@@ -63,6 +69,9 @@ jobs:
           path: |
             librusty_v8_release_armv7-unknown-linux-gnueabihf.a.gz
             src_binding_release_armv7-unknown-linux-gnueabihf.rs
+            librusty_v8_ptrcomp_sandbox_release_armv7-unknown-linux-gnueabihf.a.gz
+            src_binding_ptrcomp_sandbox_release_armv7-unknown-linux-gnueabihf.rs
+            rusty_v8_ptrcomp_sandbox_release_armv7-unknown-linux-gnueabihf.sha256
           if-no-files-found: error
 
   publish-assets:
@@ -94,3 +103,6 @@ jobs:
           files: |
             librusty_v8_release_armv7-unknown-linux-gnueabihf.a.gz
             src_binding_release_armv7-unknown-linux-gnueabihf.rs
+            librusty_v8_ptrcomp_sandbox_release_armv7-unknown-linux-gnueabihf.a.gz
+            src_binding_ptrcomp_sandbox_release_armv7-unknown-linux-gnueabihf.rs
+            rusty_v8_ptrcomp_sandbox_release_armv7-unknown-linux-gnueabihf.sha256

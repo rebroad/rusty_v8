@@ -70,17 +70,72 @@ jobs:
           cargo build -vv --locked --release --target "${TARGET}" --features v8_enable_sandbox
           gzip -9c "target/${TARGET}/release/gn_out/obj/librusty_v8.a" > "${LIB_NAME}"
           cp "target/${TARGET}/release/gn_out/src_binding.rs" "${BINDING_NAME}"
+          sha256sum "${LIB_NAME}" "${BINDING_NAME}" > "rusty_v8_ptrcomp_sandbox_release_${TARGET}.sha256"
       - uses: actions/upload-artifact@v4
         with:
           name: codex-x64-musl-assets
           path: |
             ${{ env.LIB_NAME }}
             ${{ env.BINDING_NAME }}
+            rusty_v8_ptrcomp_sandbox_release_${{ env.TARGET }}.sha256
+          if-no-files-found: error
+
+  build-android:
+    name: Build sandbox Android arm64
+    runs-on: ubuntu-22.04
+    timeout-minutes: 240
+    env:
+      V8_FROM_SOURCE: true
+      TARGET: aarch64-linux-android
+      RELEASE_LIB_NAME: librusty_v8_release_aarch64-linux-android.a.gz
+      RELEASE_BINDING_NAME: src_binding_release_aarch64-linux-android.rs
+      LIB_NAME: librusty_v8_ptrcomp_sandbox_release_aarch64-linux-android.a.gz
+      BINDING_NAME: src_binding_ptrcomp_sandbox_release_aarch64-linux-android.rs
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: dsherret/rust-toolchain-file@v1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install Android build tools
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -y
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends unzip
+      - name: Build Android sandbox artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          rustup target add "${TARGET}"
+          python3 build/linux/sysroot_scripts/install-sysroot.py --arch=amd64
+          linker="${GITHUB_WORKSPACE}/third_party/android_ndk/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android24-clang++"
+          export CARGO_TARGET_AARCH64_LINUX_ANDROID_LINKER="${linker}"
+          cargo build -vv --locked --release --target "${TARGET}"
+          gzip -9c "target/${TARGET}/release/gn_out/obj/librusty_v8.a" > "${RELEASE_LIB_NAME}"
+          cp "target/${TARGET}/release/gn_out/src_binding.rs" "${RELEASE_BINDING_NAME}"
+          cargo build -vv --locked --release --target "${TARGET}" --features v8_enable_sandbox
+          gzip -9c "target/${TARGET}/release/gn_out/obj/librusty_v8.a" > "${LIB_NAME}"
+          cp "target/${TARGET}/release/gn_out/src_binding.rs" "${BINDING_NAME}"
+          sha256sum "${LIB_NAME}" "${BINDING_NAME}" > "rusty_v8_ptrcomp_sandbox_release_${TARGET}.sha256"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: codex-android-assets
+          path: |
+            ${{ env.RELEASE_LIB_NAME }}
+            ${{ env.RELEASE_BINDING_NAME }}
+            ${{ env.LIB_NAME }}
+            ${{ env.BINDING_NAME }}
+            rusty_v8_ptrcomp_sandbox_release_${{ env.TARGET }}.sha256
           if-no-files-found: error
 
   publish:
     name: Publish Codex Rusty V8 assets
-    needs: build-x64-musl
+    needs:
+      - build-x64-musl
+      - build-android
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/download-artifact@v4
