@@ -134,6 +134,7 @@ jobs:
           fi
           clang_dir="${RUNNER_TEMP}/rusty-v8-clang"
           python3 tools/clang/scripts/update.py --output-dir "${clang_dir}"
+          python3 tools/clang/scripts/update.py --package libclang --output-dir "${clang_dir}"
           clang_lib="$(find "${clang_dir}" -type f -name libclang.so -print -quit)"
           test -n "${clang_lib}"
           export CLANG_BASE_PATH="${clang_dir}"
@@ -199,6 +200,7 @@ jobs:
           python3 build/linux/sysroot_scripts/install-sysroot.py --arch=amd64
           clang_dir="${RUNNER_TEMP}/rusty-v8-clang"
           python3 tools/clang/scripts/update.py --output-dir "${clang_dir}"
+          python3 tools/clang/scripts/update.py --package libclang --output-dir "${clang_dir}"
           clang_lib="$(find "${clang_dir}" -type f -name libclang.so -print -quit)"
           test -n "${clang_lib}"
           export CLANG_BASE_PATH="${clang_dir}"
