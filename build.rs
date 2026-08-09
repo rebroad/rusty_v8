@@ -240,6 +240,11 @@ fn build_binding() {
       clang_args.push(format!("--target={target_triple}"));
       if let Ok(sysroot) = env::var("RUSTY_V8_TARGET_SYSROOT") {
         clang_args.push(format!("--sysroot={sysroot}"));
+        // Make libclang use the same Debian cross toolchain as the V8 build.
+        // Without this, newer Clang versions can parse the target's C headers
+        // incompletely and libc++'s <cstdint> aliases become unresolved.
+        clang_args.push("--gcc-toolchain=/usr".to_string());
+        clang_args.push(format!("-isystem{sysroot}/include"));
       }
     }
   } else if target_os == "ios" {
