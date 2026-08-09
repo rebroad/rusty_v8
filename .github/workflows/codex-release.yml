@@ -137,9 +137,15 @@ jobs:
           python3 tools/clang/scripts/update.py --package libclang --output-dir "${clang_dir}"
           test -x "${clang_dir}/bin/clang"
           clang_lib="$(find "${clang_dir}" \( -type f -o -type l \) -name 'libclang.so*' -print -quit)"
-          test -n "${clang_lib}" && test -e "${clang_lib}"
+          if [[ -z "${clang_lib}" ]]; then
+            echo "ERROR: libclang shared library not found in ${clang_dir}" >&2
+            find "${clang_dir}" \( -type f -o -type l \) -name '*libclang*' -print | head -20 >&2 || true
+            find "${clang_dir}" -maxdepth 2 -type d -print | sort | head -40 >&2 || true
+            exit 1
+          fi
+          test -e "${clang_lib}"
           export CLANG_BASE_PATH="${clang_dir}"
-          export LIBCLANG_PATH="$(dirname "${clang_lib}")"
+          export LIBCLANG_PATH="${clang_lib}"
           export PATH="${ANDROID_NDK_HOME}/toolchains/llvm/prebuilt/linux-x86_64/bin:${PATH}"
           export CC_aarch64_linux_android=aarch64-linux-android29-clang
           export CXX_aarch64_linux_android=aarch64-linux-android29-clang++
@@ -203,9 +209,15 @@ jobs:
           python3 tools/clang/scripts/update.py --package libclang --output-dir "${clang_dir}"
           test -x "${clang_dir}/bin/clang"
           clang_lib="$(find "${clang_dir}" \( -type f -o -type l \) -name 'libclang.so*' -print -quit)"
-          test -n "${clang_lib}" && test -e "${clang_lib}"
+          if [[ -z "${clang_lib}" ]]; then
+            echo "ERROR: libclang shared library not found in ${clang_dir}" >&2
+            find "${clang_dir}" \( -type f -o -type l \) -name '*libclang*' -print | head -20 >&2 || true
+            find "${clang_dir}" -maxdepth 2 -type d -print | sort | head -40 >&2 || true
+            exit 1
+          fi
+          test -e "${clang_lib}"
           export CLANG_BASE_PATH="${clang_dir}"
-          export LIBCLANG_PATH="$(dirname "${clang_lib}")"
+          export LIBCLANG_PATH="${clang_lib}"
           export RUSTY_V8_TARGET_SYSROOT=/usr/arm-linux-gnueabihf
           cargo build -vv --locked --release --target "${TARGET}"
           gzip -9c "target/${TARGET}/release/gn_out/obj/librusty_v8.a" > "${RELEASE_LIB_NAME}"
