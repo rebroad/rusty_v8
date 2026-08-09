@@ -253,6 +253,37 @@ curl -L https://github.com/denoland/rusty_v8/releases/download/v0.87.0/librusty_
 
 ## For maintainers
 
+### Publish Codex Rusty V8 artifacts
+
+The fork-specific Codex artifacts are built and published by the
+`codex-release.yml` GitHub Actions workflow. From a checkout of this
+repository, run:
+
+```sh
+./tools/publish_codex_release.sh --release-tag rusty-v8-v150.4.0
+```
+
+The helper prints the workflow run URL and the optional command to watch it;
+it does not wait for the build. The equivalent direct GitHub CLI command is:
+
+```sh
+gh workflow run codex-release.yml \
+  --repo rebroad/rusty_v8 \
+  --ref main \
+  -f release_tag=rusty-v8-v150.4.0
+```
+
+To monitor that run manually:
+
+```sh
+gh run list --repo rebroad/rusty_v8 --workflow codex-release.yml
+gh run watch <run-id> --repo rebroad/rusty_v8 --exit-status
+```
+
+The release tag is an input to the workflow. If the release does not exist,
+the workflow creates it; otherwise it uploads or replaces the generated
+assets on that release.
+
 **Cut a release**
 
 Create a PR to bump the release version (e.g.
