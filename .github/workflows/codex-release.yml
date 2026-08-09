@@ -37,11 +37,11 @@ jobs:
           curl -fsSL https://apt.llvm.org/llvm-snapshot.gpg.key \
             | gpg --dearmor \
             | sudo tee /etc/apt/trusted.gpg.d/llvm-snapshot.gpg >/dev/null
-          echo "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-19 main" \
-            | sudo tee /etc/apt/sources.list.d/llvm-toolchain-jammy-19.list >/dev/null
+          echo "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-21 main" \
+            | sudo tee /etc/apt/sources.list.d/llvm-toolchain-jammy-21.list >/dev/null
           sudo apt-get update -y
           sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-            clang-19 libclang-19-dev musl-tools musl-dev
+            clang-21 libclang-21-dev musl-tools musl-dev
           SYSROOT="${HOME}/musl-sysroot"
           mkdir -p "${SYSROOT}/usr/include" "${SYSROOT}/usr/lib"
           cp -a /usr/include/x86_64-linux-musl/. "${SYSROOT}/usr/include/"
@@ -61,7 +61,7 @@ jobs:
           echo "CARGO_TARGET_X86_64_UNKNOWN_LINUX_MUSL_LINKER=musl-gcc" >> "${GITHUB_ENV}"
           echo "CC_x86_64_unknown_linux_musl=musl-gcc" >> "${GITHUB_ENV}"
           echo "RUSTY_V8_MUSL_SYSROOT=${SYSROOT}" >> "${GITHUB_ENV}"
-          echo "LIBCLANG_PATH=/usr/lib/llvm-19/lib" >> "${GITHUB_ENV}"
+          echo "LIBCLANG_PATH=/usr/lib/llvm-21/lib" >> "${GITHUB_ENV}"
       - name: Install V8 sysroot
         run: python3 build/linux/sysroot_scripts/install-sysroot.py --arch=amd64
       - name: Build sandbox release artifacts
@@ -124,11 +124,11 @@ jobs:
           curl -fsSL https://apt.llvm.org/llvm-snapshot.gpg.key \
             | gpg --dearmor \
             | sudo tee /etc/apt/trusted.gpg.d/llvm-snapshot.gpg >/dev/null
-          echo "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-19 main" \
-            | sudo tee /etc/apt/sources.list.d/llvm-toolchain-jammy-19.list >/dev/null
+          echo "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-21 main" \
+            | sudo tee /etc/apt/sources.list.d/llvm-toolchain-jammy-21.list >/dev/null
           sudo apt-get update -y
           sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-            clang-19 libclang-19-dev
+            clang-21 libclang-21-dev
       - name: Build Android sandbox artifacts
         shell: bash
         run: |
@@ -148,7 +148,7 @@ jobs:
           python3 tools/clang/scripts/update.py --output-dir "${clang_dir}"
           test -x "${clang_dir}/bin/clang"
           export CLANG_BASE_PATH="${clang_dir}"
-          export LIBCLANG_PATH=/usr/lib/llvm-19/lib
+          export LIBCLANG_PATH=/usr/lib/llvm-21/lib
           export PATH="${ANDROID_NDK_HOME}/toolchains/llvm/prebuilt/linux-x86_64/bin:${PATH}"
           export CC_aarch64_linux_android=aarch64-linux-android29-clang
           export CXX_aarch64_linux_android=aarch64-linux-android29-clang++
@@ -209,11 +209,11 @@ jobs:
           curl -fsSL https://apt.llvm.org/llvm-snapshot.gpg.key \
             | gpg --dearmor \
             | sudo tee /etc/apt/trusted.gpg.d/llvm-snapshot.gpg >/dev/null
-          echo "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-19 main" \
-            | sudo tee /etc/apt/sources.list.d/llvm-toolchain-jammy-19.list >/dev/null
+          echo "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-21 main" \
+            | sudo tee /etc/apt/sources.list.d/llvm-toolchain-jammy-21.list >/dev/null
           sudo apt-get update -y
           sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-            clang-19 libclang-19-dev
+            clang-21 libclang-21-dev
       - name: Build ARMv7 release artifacts
         shell: bash
         run: |
@@ -223,7 +223,7 @@ jobs:
           python3 tools/clang/scripts/update.py --output-dir "${clang_dir}"
           test -x "${clang_dir}/bin/clang"
           export CLANG_BASE_PATH="${clang_dir}"
-          export LIBCLANG_PATH=/usr/lib/llvm-19/lib
+          export LIBCLANG_PATH=/usr/lib/llvm-21/lib
           export RUSTY_V8_TARGET_SYSROOT=/usr/arm-linux-gnueabihf
           cargo build -vv --locked --release --target "${TARGET}"
           gzip -9c "target/${TARGET}/release/gn_out/obj/librusty_v8.a" > "${RELEASE_LIB_NAME}"
