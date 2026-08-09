@@ -22,11 +22,11 @@ jobs:
       LIB_NAME: librusty_v8_ptrcomp_sandbox_release_x86_64-unknown-linux-musl.a.gz
       BINDING_NAME: src_binding_ptrcomp_sandbox_release_x86_64-unknown-linux-musl.rs
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           submodules: recursive
       - uses: dsherret/rust-toolchain-file@v1
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.11"
       - name: Install musl toolchain and sysroot
@@ -71,7 +71,7 @@ jobs:
           gzip -9c "target/${TARGET}/release/gn_out/obj/librusty_v8.a" > "${LIB_NAME}"
           cp "target/${TARGET}/release/gn_out/src_binding.rs" "${BINDING_NAME}"
           sha256sum "${LIB_NAME}" "${BINDING_NAME}" > "rusty_v8_ptrcomp_sandbox_release_${TARGET}.sha256"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: codex-x64-musl-assets
           path: |
@@ -87,16 +87,18 @@ jobs:
     env:
       V8_FROM_SOURCE: true
       TARGET: aarch64-linux-android
+      ANDROID_NDK_REVISION: r28c
+      ANDROID_NDK_VERSION: 28.2.13676358
       RELEASE_LIB_NAME: librusty_v8_release_aarch64-linux-android.a.gz
       RELEASE_BINDING_NAME: src_binding_release_aarch64-linux-android.rs
       LIB_NAME: librusty_v8_ptrcomp_sandbox_release_aarch64-linux-android.a.gz
       BINDING_NAME: src_binding_ptrcomp_sandbox_release_aarch64-linux-android.rs
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           submodules: recursive
       - uses: dsherret/rust-toolchain-file@v1
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.11"
       - name: Install Android build tools
@@ -105,21 +107,44 @@ jobs:
           set -euo pipefail
           sudo apt-get update -y
           sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends unzip
+          ndk_home="${RUNNER_TEMP}/android-ndk-${ANDROID_NDK_REVISION}"
+          if [[ ! -x "${ndk_home}/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android29-clang++" ]]; then
+            curl -fsSL \
+              "https://dl.google.com/android/repository/android-ndk-${ANDROID_NDK_REVISION}-linux.zip" \
+              -o "${RUNNER_TEMP}/android-ndk.zip"
+            unzip -q -o "${RUNNER_TEMP}/android-ndk.zip" -d "${RUNNER_TEMP}"
+          fi
+          test -x "${ndk_home}/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android29-clang++"
+          echo "ANDROID_NDK_HOME=${ndk_home}" >> "${GITHUB_ENV}"
+          echo "ANDROID_NDK_ROOT=${ndk_home}" >> "${GITHUB_ENV}"
       - name: Build Android sandbox artifacts
         shell: bash
         run: |
           set -euo pipefail
           rustup target add "${TARGET}"
           python3 build/linux/sysroot_scripts/install-sysroot.py --arch=amd64
-          mkdir -p build/config
-          if ! grep -Fq 'android_ndk_version =' build/config/gclient_args.gni 2>/dev/null; then
-            cat > build/config/gclient_args.gni <<'EOF'
-          declare_args() {
-            android_ndk_version = "26.2.11394342"
-          }
-          EOF
+          mkdir -p third_party/android_toolchain
+          ln -sfn "${ANDROID_NDK_HOME}" third_party/android_ndk
+          ln -sfn ../android_ndk third_party/android_toolchain/ndk
+          config_gni=build/config/android/config.gni
+          if ! grep -Fq 'android_ndk_version =' "${config_gni}"; then
+            sed -i \
+              "s#\(  android_ndk_root = \"//third_party/android_toolchain/ndk\"\)#\1\n  android_ndk_version = \"r28\"#" \
+              "${config_gni}"
           fi
-          linker="${GITHUB_WORKSPACE}/third_party/android_ndk/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android24-clang++"
+          clang_dir="${RUNNER_TEMP}/rusty-v8-clang"
+          python3 tools/clang/scripts/update.py --output-dir "${clang_dir}"
+          clang_lib="$(find "${clang_dir}" -type f -name libclang.so -print -quit)"
+          test -n "${clang_lib}"
+          export CLANG_BASE_PATH="${clang_dir}"
+          export LIBCLANG_PATH="$(dirname "${clang_lib}")"
+          export BINDGEN_EXTRA_CLANG_ARGS="--target=${TARGET} --sysroot=${ANDROID_NDK_HOME}/toolchains/llvm/prebuilt/linux-x86_64/sysroot"
+          export PATH="${ANDROID_NDK_HOME}/toolchains/llvm/prebuilt/linux-x86_64/bin:${PATH}"
+          export CC_aarch64_linux_android=aarch64-linux-android29-clang
+          export CXX_aarch64_linux_android=aarch64-linux-android29-clang++
+          export AR_aarch64_linux_android=llvm-ar
+          export RANLIB_aarch64_linux_android=llvm-ranlib
+          linker="${ANDROID_NDK_HOME}/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android29-clang++"
           export CARGO_TARGET_AARCH64_LINUX_ANDROID_LINKER="${linker}"
           cargo build -vv --locked --release --target "${TARGET}"
           gzip -9c "target/${TARGET}/release/gn_out/obj/librusty_v8.a" > "${RELEASE_LIB_NAME}"
@@ -128,7 +153,7 @@ jobs:
           gzip -9c "target/${TARGET}/release/gn_out/obj/librusty_v8.a" > "${LIB_NAME}"
           cp "target/${TARGET}/release/gn_out/src_binding.rs" "${BINDING_NAME}"
           sha256sum "${LIB_NAME}" "${BINDING_NAME}" > "rusty_v8_ptrcomp_sandbox_release_${TARGET}.sha256"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: codex-android-assets
           path: |
@@ -151,11 +176,11 @@ jobs:
       LIB_NAME: librusty_v8_ptrcomp_sandbox_release_armv7-unknown-linux-gnueabihf.a.gz
       BINDING_NAME: src_binding_ptrcomp_sandbox_release_armv7-unknown-linux-gnueabihf.rs
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           submodules: recursive
       - uses: dsherret/rust-toolchain-file@v1
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.11"
       - name: Install ARMv7 cross toolchain
@@ -172,6 +197,13 @@ jobs:
         run: |
           set -euo pipefail
           python3 build/linux/sysroot_scripts/install-sysroot.py --arch=amd64
+          clang_dir="${RUNNER_TEMP}/rusty-v8-clang"
+          python3 tools/clang/scripts/update.py --output-dir "${clang_dir}"
+          clang_lib="$(find "${clang_dir}" -type f -name libclang.so -print -quit)"
+          test -n "${clang_lib}"
+          export CLANG_BASE_PATH="${clang_dir}"
+          export LIBCLANG_PATH="$(dirname "${clang_lib}")"
+          export BINDGEN_EXTRA_CLANG_ARGS="--target=${TARGET} --sysroot=/usr/arm-linux-gnueabihf"
           cargo build -vv --locked --release --target "${TARGET}"
           gzip -9c "target/${TARGET}/release/gn_out/obj/librusty_v8.a" > "${RELEASE_LIB_NAME}"
           cp "target/${TARGET}/release/gn_out/src_binding.rs" "${RELEASE_BINDING_NAME}"
@@ -179,7 +211,7 @@ jobs:
           gzip -9c "target/${TARGET}/release/gn_out/obj/librusty_v8.a" > "${LIB_NAME}"
           cp "target/${TARGET}/release/gn_out/src_binding.rs" "${BINDING_NAME}"
           sha256sum "${LIB_NAME}" "${BINDING_NAME}" > "rusty_v8_ptrcomp_sandbox_release_${TARGET}.sha256"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: codex-armv7-assets
           path: |
@@ -198,7 +230,7 @@ jobs:
       - build-armv7
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v7
         with:
           pattern: codex-*-assets
           merge-multiple: true
