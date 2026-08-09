@@ -111,6 +111,14 @@ jobs:
           set -euo pipefail
           rustup target add "${TARGET}"
           python3 build/linux/sysroot_scripts/install-sysroot.py --arch=amd64
+          mkdir -p build/config
+          if ! grep -Fq 'android_ndk_version =' build/config/gclient_args.gni 2>/dev/null; then
+            cat > build/config/gclient_args.gni <<'EOF'
+          declare_args() {
+            android_ndk_version = "26.2.11394342"
+          }
+          EOF
+          fi
           linker="${GITHUB_WORKSPACE}/third_party/android_ndk/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android24-clang++"
           export CARGO_TARGET_AARCH64_LINUX_ANDROID_LINKER="${linker}"
           cargo build -vv --locked --release --target "${TARGET}"
