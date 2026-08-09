@@ -41,9 +41,12 @@ fn main() {
     "RUSTY_V8_ARCHIVE",
     "RUSTY_V8_MIRROR",
     "RUSTY_V8_SRC_BINDING_PATH",
+    "RUSTY_V8_TARGET_SYSROOT",
     "SCCACHE",
     "V8_FORCE_DEBUG",
     "V8_FROM_SOURCE",
+    "ANDROID_NDK_HOME",
+    "ANDROID_NDK_ROOT",
     "PYTHON",
     "DISABLE_CLANG",
     "EXTRA_GN_ARGS",
@@ -197,7 +200,7 @@ fn build_binding() {
     let sdk_path = String::from_utf8(output.stdout).unwrap();
     clang_args.push("-isysroot".to_string());
     clang_args.push(sdk_path.trim().to_string());
-  } else if target_os == "linux" {
+  } else if target_os == "linux" || target_os == "android" {
     // Add clang resource directory for builtin headers (stddef.h, etc)
     if let Ok(libclang_path) = env::var("LIBCLANG_PATH") {
       let clang_dir = PathBuf::from(&libclang_path)
@@ -221,6 +224,23 @@ fn build_binding() {
       && let Ok(sysroot) = env::var("RUSTY_V8_MUSL_SYSROOT")
     {
       clang_args.push(format!("--sysroot={sysroot}"));
+    }
+
+    let target_triple = env::var("TARGET").unwrap_or_default();
+    if target_triple == "aarch64-linux-android" {
+      clang_args.push(format!("--target={target_triple}"));
+      if let Some(ndk_root) = env::var_os("ANDROID_NDK_HOME")
+        .or_else(|| env::var_os("ANDROID_NDK_ROOT"))
+      {
+        let sysroot = Path::new(&ndk_root)
+          .join("toolchains/llvm/prebuilt/linux-x86_64/sysroot");
+        clang_args.push(format!("--sysroot={}", sysroot.display()));
+      }
+    } else if target_triple == "armv7-unknown-linux-gnueabihf" {
+      clang_args.push(format!("--target={target_triple}"));
+      if let Ok(sysroot) = env::var("RUSTY_V8_TARGET_SYSROOT") {
+        clang_args.push(format!("--sysroot={sysroot}"));
+      }
     }
   } else if target_os == "ios" {
     // iOS: point bindgen at the iOS (device) or iOS-simulator SDK and set the
