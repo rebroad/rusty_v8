@@ -47,6 +47,7 @@ fn main() {
     "V8_FROM_SOURCE",
     "ANDROID_NDK_HOME",
     "ANDROID_NDK_ROOT",
+    "ANDROID_API_LEVEL",
     "PYTHON",
     "DISABLE_CLANG",
     "EXTRA_GN_ARGS",
@@ -228,7 +229,8 @@ fn build_binding() {
 
     let target_triple = env::var("TARGET").unwrap_or_default();
     if target_triple == "aarch64-linux-android" {
-      clang_args.push(format!("--target={target_triple}"));
+      let api_level = env::var("ANDROID_API_LEVEL").unwrap_or_else(|_| "29".to_string());
+      clang_args.push(format!("--target={target_triple}{api_level}"));
       if let Some(ndk_root) = env::var_os("ANDROID_NDK_HOME")
         .or_else(|| env::var_os("ANDROID_NDK_ROOT"))
       {

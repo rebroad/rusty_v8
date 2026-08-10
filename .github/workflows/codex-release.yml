@@ -149,6 +149,7 @@ jobs:
           test -x "${clang_dir}/bin/clang"
           export CLANG_BASE_PATH="${clang_dir}"
           export LIBCLANG_PATH=/usr/lib/llvm-21/lib
+          export ANDROID_API_LEVEL=29
           export PATH="${ANDROID_NDK_HOME}/toolchains/llvm/prebuilt/linux-x86_64/bin:${PATH}"
           export CC_aarch64_linux_android=aarch64-linux-android29-clang
           export CXX_aarch64_linux_android=aarch64-linux-android29-clang++
@@ -225,6 +226,7 @@ jobs:
           export CLANG_BASE_PATH="${clang_dir}"
           export LIBCLANG_PATH=/usr/lib/llvm-21/lib
           export RUSTY_V8_TARGET_SYSROOT=/usr/arm-linux-gnueabihf
+          export EXTRA_GN_ARGS='v8_enable_pointer_compression_shared_cage=false'
           cargo build -vv --locked --release --target "${TARGET}"
           gzip -9c "target/${TARGET}/release/gn_out/obj/librusty_v8.a" > "${RELEASE_LIB_NAME}"
           cp "target/${TARGET}/release/gn_out/src_binding.rs" "${RELEASE_BINDING_NAME}"
