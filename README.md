@@ -264,8 +264,9 @@ repository, run:
 ```
 
 The script derives the tag from `Cargo.toml` (`rusty-v8-v150.4.0` for the
-current version). Use `--release-tag <tag>` only when publishing to a
-different release explicitly.
+current version). Use `--release-tag <tag>` only to provide that same tag
+explicitly; the helper and workflow reject tags whose version does not match
+`Cargo.toml`.
 
 The helper prints the workflow run URL and the optional command to watch it;
 it does not wait for the build. The equivalent direct GitHub CLI command is:

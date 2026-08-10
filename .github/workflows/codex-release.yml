@@ -12,8 +12,32 @@ permissions:
   contents: write
 
 jobs:
+  validate-release-tag:
+    name: Validate release tag
+    runs-on: ubuntu-22.04
+    outputs:
+      release_tag: ${{ steps.validate.outputs.release_tag }}
+    steps:
+      - uses: actions/checkout@v6
+      - name: Validate release tag against Cargo.toml
+        id: validate
+        env:
+          RELEASE_TAG: ${{ inputs.release_tag }}
+        run: |
+          set -euo pipefail
+          version="$(sed -nE 's/^[[:space:]]*version[[:space:]]*=[[:space:]]*"([0-9]+\.[0-9]+\.[0-9]+)".*$/\1/p' Cargo.toml | head -n 1)"
+          test -n "${version}"
+          expected_tag="rusty-v8-v${version}"
+          if [[ "${RELEASE_TAG}" != "${expected_tag}" ]]; then
+            echo "Release tag '${RELEASE_TAG}' does not match Cargo.toml version '${version}'." >&2
+            echo "Expected: ${expected_tag}" >&2
+            exit 1
+          fi
+          echo "release_tag=${expected_tag}" >> "${GITHUB_OUTPUT}"
+
   build-x64-musl:
     name: Build sandbox x86_64 musl
+    needs: validate-release-tag
     runs-on: ubuntu-22.04
     timeout-minutes: 240
     env:
@@ -82,6 +106,7 @@ jobs:
 
   build-android:
     name: Build sandbox Android arm64
+    needs: validate-release-tag
     runs-on: ubuntu-22.04
     timeout-minutes: 240
     env:
@@ -179,6 +204,7 @@ jobs:
 
   build-armv7:
     name: Build ARMv7 release
+    needs: validate-release-tag
     runs-on: ubuntu-22.04
     timeout-minutes: 240
     env:
@@ -242,6 +268,7 @@ jobs:
   publish:
     name: Publish Codex Rusty V8 assets
     needs:
+      - validate-release-tag
       - build-x64-musl
       - build-android
       - build-armv7
@@ -255,7 +282,7 @@ jobs:
       - name: Ensure release exists
         env:
           GH_TOKEN: ${{ github.token }}
-          RELEASE_TAG: ${{ inputs.release_tag }}
+          RELEASE_TAG: ${{ needs.validate-release-tag.outputs.release_tag }}
         run: |
           set -euo pipefail
           if ! gh release view "${RELEASE_TAG}" -R "${GITHUB_REPOSITORY}" >/dev/null 2>&1; then
@@ -264,5 +291,5 @@ jobs:
       - name: Upload release assets
         uses: softprops/action-gh-release@v3
         with:
-          tag_name: ${{ inputs.release_tag }}
+          tag_name: ${{ needs.validate-release-tag.outputs.release_tag }}
           files: assets/*

@@ -12,7 +12,8 @@ Usage: tools/publish_codex_release.sh [--release-tag <tag>]
 Dispatch the Codex Rusty V8 producer workflow and print its run URL.
 The workflow builds the fork-specific artifacts and uploads them to the
 Rusty V8 release. By default the tag is derived from Cargo.toml as
-rusty-v8-v<version>. This script does not watch the run automatically.
+rusty-v8-v<version>. An explicit tag must match that derived value. This
+script does not watch the run automatically.
 USAGE
 }
 
@@ -35,15 +36,20 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
+ROOT_DIR="$(git rev-parse --show-toplevel)"
+VERSION="$(sed -nE 's/^[[:space:]]*version[[:space:]]*=[[:space:]]*"([0-9]+\.[0-9]+\.[0-9]+)".*$/\1/p' \
+  "$ROOT_DIR/Cargo.toml" | head -n 1)"
+if [[ -z "$VERSION" ]]; then
+  echo "ERROR: could not determine the Rusty V8 version from Cargo.toml." >&2
+  exit 1
+fi
+
+EXPECTED_TAG="rusty-v8-v${VERSION}"
 if [[ -z "$RELEASE_TAG" ]]; then
-  ROOT_DIR="$(git rev-parse --show-toplevel)"
-  VERSION="$(sed -nE 's/^[[:space:]]*version[[:space:]]*=[[:space:]]*"([0-9]+\.[0-9]+\.[0-9]+)".*$/\1/p' \
-    "$ROOT_DIR/Cargo.toml" | head -n 1)"
-  if [[ -z "$VERSION" ]]; then
-    echo "ERROR: could not determine the Rusty V8 version from Cargo.toml." >&2
-    exit 1
-  fi
-  RELEASE_TAG="rusty-v8-v${VERSION}"
+  RELEASE_TAG="$EXPECTED_TAG"
+elif [[ "$RELEASE_TAG" != "$EXPECTED_TAG" ]]; then
+  echo "ERROR: release tag '$RELEASE_TAG' does not match Cargo.toml version '$VERSION' (expected '$EXPECTED_TAG')." >&2
+  exit 1
 fi
 
 command -v gh >/dev/null 2>&1 || {
