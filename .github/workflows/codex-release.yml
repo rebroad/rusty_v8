@@ -160,6 +160,7 @@ jobs:
           cargo build -vv --locked --release --target "${TARGET}"
           gzip -9c "target/${TARGET}/release/gn_out/obj/librusty_v8.a" > "${RELEASE_LIB_NAME}"
           cp "target/${TARGET}/release/gn_out/src_binding.rs" "${RELEASE_BINDING_NAME}"
+          sha256sum "${RELEASE_LIB_NAME}" "${RELEASE_BINDING_NAME}" > "rusty_v8_release_${TARGET}.sha256"
           cargo build -vv --locked --release --target "${TARGET}" --features v8_enable_sandbox
           gzip -9c "target/${TARGET}/release/gn_out/obj/librusty_v8.a" > "${LIB_NAME}"
           cp "target/${TARGET}/release/gn_out/src_binding.rs" "${BINDING_NAME}"
@@ -170,6 +171,7 @@ jobs:
           path: |
             ${{ env.RELEASE_LIB_NAME }}
             ${{ env.RELEASE_BINDING_NAME }}
+            rusty_v8_release_${{ env.TARGET }}.sha256
             ${{ env.LIB_NAME }}
             ${{ env.BINDING_NAME }}
             rusty_v8_ptrcomp_sandbox_release_${{ env.TARGET }}.sha256
