@@ -260,8 +260,12 @@ The fork-specific Codex artifacts are built and published by the
 repository, run:
 
 ```sh
-./tools/publish_codex_release.sh --release-tag rusty-v8-v150.4.0
+./tools/publish_codex_release.sh
 ```
+
+The script derives the tag from `Cargo.toml` (`rusty-v8-v150.4.0` for the
+current version). Use `--release-tag <tag>` only when publishing to a
+different release explicitly.
 
 The helper prints the workflow run URL and the optional command to watch it;
 it does not wait for the build. The equivalent direct GitHub CLI command is:
