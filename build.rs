@@ -229,7 +229,8 @@ fn build_binding() {
 
     let target_triple = env::var("TARGET").unwrap_or_default();
     if target_triple == "aarch64-linux-android" {
-      let api_level = env::var("ANDROID_API_LEVEL").unwrap_or_else(|_| "29".to_string());
+      let api_level =
+        env::var("ANDROID_API_LEVEL").unwrap_or_else(|_| "29".to_string());
       clang_args.push(format!("--target={target_triple}{api_level}"));
       if let Some(ndk_root) = env::var_os("ANDROID_NDK_HOME")
         .or_else(|| env::var_os("ANDROID_NDK_ROOT"))
@@ -237,7 +238,16 @@ fn build_binding() {
         let sysroot = Path::new(&ndk_root)
           .join("toolchains/llvm/prebuilt/linux-x86_64/sysroot");
         clang_args.push(format!("--sysroot={}", sysroot.display()));
+        // libc++'s <cstdint> uses the ABI-specific Android headers for
+        // uintptr_t and related types. libclang does not reliably add these
+        // directories when the NDK sysroot is supplied explicitly.
+        clang_args.push(format!(
+          "-isystem{}/usr/include/aarch64-linux-android",
+          sysroot.display()
+        ));
+        clang_args.push(format!("-isystem{}/usr/include", sysroot.display()));
       }
+      clang_args.push(format!("-D__ANDROID_API__={api_level}"));
     } else if target_triple == "armv7-unknown-linux-gnueabihf" {
       clang_args.push(format!("--target={target_triple}"));
       if let Ok(sysroot) = env::var("RUSTY_V8_TARGET_SYSROOT") {

@@ -176,7 +176,7 @@ jobs:
           if-no-files-found: error
 
   build-armv7:
-    name: Build sandbox ARMv7
+    name: Build ARMv7 release
     runs-on: ubuntu-22.04
     timeout-minutes: 240
     env:
@@ -184,8 +184,6 @@ jobs:
       TARGET: armv7-unknown-linux-gnueabihf
       RELEASE_LIB_NAME: librusty_v8_release_armv7-unknown-linux-gnueabihf.a.gz
       RELEASE_BINDING_NAME: src_binding_release_armv7-unknown-linux-gnueabihf.rs
-      LIB_NAME: librusty_v8_ptrcomp_sandbox_release_armv7-unknown-linux-gnueabihf.a.gz
-      BINDING_NAME: src_binding_ptrcomp_sandbox_release_armv7-unknown-linux-gnueabihf.rs
     steps:
       - uses: actions/checkout@v6
         with:
@@ -226,23 +224,17 @@ jobs:
           export CLANG_BASE_PATH="${clang_dir}"
           export LIBCLANG_PATH=/usr/lib/llvm-21/lib
           export RUSTY_V8_TARGET_SYSROOT=/usr/arm-linux-gnueabihf
-          export EXTRA_GN_ARGS='v8_enable_pointer_compression_shared_cage=false'
+          # V8 pointer compression and the sandbox require 64-bit pointers;
+          # ARMv7 publishes the ordinary release artifact only.
           cargo build -vv --locked --release --target "${TARGET}"
           gzip -9c "target/${TARGET}/release/gn_out/obj/librusty_v8.a" > "${RELEASE_LIB_NAME}"
           cp "target/${TARGET}/release/gn_out/src_binding.rs" "${RELEASE_BINDING_NAME}"
-          cargo build -vv --locked --release --target "${TARGET}" --features v8_enable_sandbox
-          gzip -9c "target/${TARGET}/release/gn_out/obj/librusty_v8.a" > "${LIB_NAME}"
-          cp "target/${TARGET}/release/gn_out/src_binding.rs" "${BINDING_NAME}"
-          sha256sum "${LIB_NAME}" "${BINDING_NAME}" > "rusty_v8_ptrcomp_sandbox_release_${TARGET}.sha256"
       - uses: actions/upload-artifact@v6
         with:
           name: codex-armv7-assets
           path: |
             ${{ env.RELEASE_LIB_NAME }}
             ${{ env.RELEASE_BINDING_NAME }}
-            ${{ env.LIB_NAME }}
-            ${{ env.BINDING_NAME }}
-            rusty_v8_ptrcomp_sandbox_release_${{ env.TARGET }}.sha256
           if-no-files-found: error
 
   publish:
