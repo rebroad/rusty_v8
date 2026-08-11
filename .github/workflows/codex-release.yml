@@ -257,12 +257,14 @@ jobs:
           cargo build -vv --locked --release --target "${TARGET}"
           gzip -9c "target/${TARGET}/release/gn_out/obj/librusty_v8.a" > "${RELEASE_LIB_NAME}"
           cp "target/${TARGET}/release/gn_out/src_binding.rs" "${RELEASE_BINDING_NAME}"
+          sha256sum "${RELEASE_LIB_NAME}" "${RELEASE_BINDING_NAME}" > "rusty_v8_release_${TARGET}.sha256"
       - uses: actions/upload-artifact@v6
         with:
           name: codex-armv7-assets
           path: |
             ${{ env.RELEASE_LIB_NAME }}
             ${{ env.RELEASE_BINDING_NAME }}
+            rusty_v8_release_${{ env.TARGET }}.sha256
           if-no-files-found: error
 
   publish:
