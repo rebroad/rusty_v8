@@ -289,7 +289,30 @@ jobs:
             gh release create "${RELEASE_TAG}" -R "${GITHUB_REPOSITORY}" --title "${RELEASE_TAG}" --notes "Codex sandbox Rusty V8 artifacts"
           fi
       - name: Upload release assets
-        uses: softprops/action-gh-release@v3
-        with:
-          tag_name: ${{ needs.validate-release-tag.outputs.release_tag }}
-          files: assets/*
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ needs.validate-release-tag.outputs.release_tag }}
+        run: |
+          set -euo pipefail
+          expected_assets=(
+            librusty_v8_ptrcomp_sandbox_release_aarch64-linux-android.a.gz
+            src_binding_ptrcomp_sandbox_release_aarch64-linux-android.rs
+            rusty_v8_ptrcomp_sandbox_release_aarch64-linux-android.sha256
+            librusty_v8_ptrcomp_sandbox_release_x86_64-unknown-linux-musl.a.gz
+            src_binding_ptrcomp_sandbox_release_x86_64-unknown-linux-musl.rs
+            rusty_v8_ptrcomp_sandbox_release_x86_64-unknown-linux-musl.sha256
+            librusty_v8_release_aarch64-linux-android.a.gz
+            src_binding_release_aarch64-linux-android.rs
+            rusty_v8_release_aarch64-linux-android.sha256
+            librusty_v8_release_armv7-unknown-linux-gnueabihf.a.gz
+            src_binding_release_armv7-unknown-linux-gnueabihf.rs
+            rusty_v8_release_armv7-unknown-linux-gnueabihf.sha256
+          )
+          for asset in "${expected_assets[@]}"; do
+            test -s "assets/${asset}" || {
+              echo "Missing expected release asset: ${asset}" >&2
+              exit 1
+            }
+          done
+          gh release upload "${RELEASE_TAG}" -R "${GITHUB_REPOSITORY}" \
+            --clobber assets/*
