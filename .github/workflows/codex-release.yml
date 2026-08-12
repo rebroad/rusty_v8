@@ -202,71 +202,6 @@ jobs:
             rusty_v8_ptrcomp_sandbox_release_${{ env.TARGET }}.sha256
           if-no-files-found: error
 
-  build-armv7:
-    name: Build ARMv7 release
-    needs: validate-release-tag
-    runs-on: ubuntu-22.04
-    timeout-minutes: 240
-    env:
-      V8_FROM_SOURCE: true
-      TARGET: armv7-unknown-linux-gnueabihf
-      RELEASE_LIB_NAME: librusty_v8_release_armv7-unknown-linux-gnueabihf.a.gz
-      RELEASE_BINDING_NAME: src_binding_release_armv7-unknown-linux-gnueabihf.rs
-    steps:
-      - uses: actions/checkout@v6
-        with:
-          submodules: recursive
-      - uses: dsherret/rust-toolchain-file@v1
-      - uses: actions/setup-python@v6
-        with:
-          python-version: "3.11"
-      - name: Install ARMv7 cross toolchain
-        shell: bash
-        run: |
-          set -euo pipefail
-          rustup target add "${TARGET}"
-          sudo apt-get update -y
-          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-            gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf pkg-config
-          echo "CARGO_TARGET_ARMV7_UNKNOWN_LINUX_GNUEABIHF_LINKER=arm-linux-gnueabihf-gcc" >> "${GITHUB_ENV}"
-      - name: Install host Clang for bindgen
-        shell: bash
-        run: |
-          set -euo pipefail
-          curl -fsSL https://apt.llvm.org/llvm-snapshot.gpg.key \
-            | gpg --dearmor \
-            | sudo tee /etc/apt/trusted.gpg.d/llvm-snapshot.gpg >/dev/null
-          echo "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-21 main" \
-            | sudo tee /etc/apt/sources.list.d/llvm-toolchain-jammy-21.list >/dev/null
-          sudo apt-get update -y
-          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-            clang-21 libclang-21-dev
-      - name: Build ARMv7 release artifacts
-        shell: bash
-        run: |
-          set -euo pipefail
-          python3 build/linux/sysroot_scripts/install-sysroot.py --arch=amd64
-          clang_dir="${RUNNER_TEMP}/rusty-v8-clang"
-          python3 tools/clang/scripts/update.py --output-dir "${clang_dir}"
-          test -x "${clang_dir}/bin/clang"
-          export CLANG_BASE_PATH="${clang_dir}"
-          export LIBCLANG_PATH=/usr/lib/llvm-21/lib
-          export RUSTY_V8_TARGET_SYSROOT=/usr/arm-linux-gnueabihf
-          # V8 pointer compression and the sandbox require 64-bit pointers;
-          # ARMv7 publishes the ordinary release artifact only.
-          cargo build -vv --locked --release --target "${TARGET}"
-          gzip -9c "target/${TARGET}/release/gn_out/obj/librusty_v8.a" > "${RELEASE_LIB_NAME}"
-          cp "target/${TARGET}/release/gn_out/src_binding.rs" "${RELEASE_BINDING_NAME}"
-          sha256sum "${RELEASE_LIB_NAME}" "${RELEASE_BINDING_NAME}" > "rusty_v8_release_${TARGET}.sha256"
-      - uses: actions/upload-artifact@v6
-        with:
-          name: codex-armv7-assets
-          path: |
-            ${{ env.RELEASE_LIB_NAME }}
-            ${{ env.RELEASE_BINDING_NAME }}
-            rusty_v8_release_${{ env.TARGET }}.sha256
-          if-no-files-found: error
-
   build-armv7-musl:
     name: Build ARMv7 musl release
     needs: validate-release-tag
@@ -350,7 +285,6 @@ jobs:
       - validate-release-tag
       - build-x64-musl
       - build-android
-      - build-armv7
       - build-armv7-musl
     runs-on: ubuntu-22.04
     steps:
@@ -384,9 +318,6 @@ jobs:
             librusty_v8_release_aarch64-linux-android.a.gz
             src_binding_release_aarch64-linux-android.rs
             rusty_v8_release_aarch64-linux-android.sha256
-            librusty_v8_release_armv7-unknown-linux-gnueabihf.a.gz
-            src_binding_release_armv7-unknown-linux-gnueabihf.rs
-            rusty_v8_release_armv7-unknown-linux-gnueabihf.sha256
             librusty_v8_release_armv7-unknown-linux-musleabihf.a.gz
             src_binding_release_armv7-unknown-linux-musleabihf.rs
             rusty_v8_release_armv7-unknown-linux-musleabihf.sha256
