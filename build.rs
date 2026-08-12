@@ -513,8 +513,14 @@ fn build_v8(is_asan: bool) {
         // no toolchain overrides needed. target_cpu and the amd64/arm64
         // sysroots are set by the aarch64 cross-compilation block above.
       }
+      "arm" => {
+        // Cross build (x64 host -> ARMv7 target). As with aarch64, the host
+        // and snapshot toolchains remain glibc while the default target
+        // toolchain uses the supplied ARMv7 musl sysroot.
+        maybe_install_sysroot("amd64");
+      }
       other => panic!(
-        "musl builds are only supported for x86_64 and aarch64 (got {other})"
+        "musl builds are only supported for x86_64, aarch64, and arm (got {other})"
       ),
     }
 
