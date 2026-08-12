@@ -295,6 +295,12 @@ jobs:
           set -euo pipefail
           rustup target add "${TARGET}"
           sudo apt-get update -y
+          curl -fsSL https://apt.llvm.org/llvm-snapshot.gpg.key \
+            | gpg --dearmor \
+            | sudo tee /etc/apt/trusted.gpg.d/llvm-snapshot.gpg >/dev/null
+          echo "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-21 main" \
+            | sudo tee /etc/apt/sources.list.d/llvm-toolchain-jammy-21.list >/dev/null
+          sudo apt-get update -y
           sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
             clang-21 libclang-21-dev
           sysroot="$(zig cc -target arm-linux-musleabihf -print-sysroot)"
