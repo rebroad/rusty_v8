@@ -221,6 +221,7 @@ jobs:
           done
           ln -s "${linux_include}/asm" "${sysroot}/usr/include/asm"
           ln -s "${generic_linux_include}/asm-generic" "${sysroot}/usr/include/asm-generic"
+          ln -s "${generic_linux_include}/linux" "${sysroot}/usr/include/linux"
           echo "RUSTY_V8_MUSL_SYSROOT=${sysroot}" >> "${GITHUB_ENV}"
       - name: Build ARMv7 musl release artifacts
         shell: bash
