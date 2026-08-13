@@ -220,6 +220,12 @@ jobs:
             fi
           done
           ln -s "${linux_include}/asm" "${sysroot}/usr/include/asm"
+          for header in "${generic_linux_include}/asm"/*; do
+            name="$(basename "${header}")"
+            if [[ ! -e "${sysroot}/usr/include/asm/${name}" ]]; then
+              ln -s "${header}" "${sysroot}/usr/include/asm/${name}"
+            fi
+          done
           ln -s "${generic_linux_include}/asm-generic" "${sysroot}/usr/include/asm-generic"
           ln -s "${generic_linux_include}/linux" "${sysroot}/usr/include/linux"
           echo "RUSTY_V8_MUSL_SYSROOT=${sysroot}" >> "${GITHUB_ENV}"
