@@ -193,6 +193,17 @@ jobs:
             sed -i '/^thumbv7neon-unknown-linux-gnueabihf$/a thumbv7neon-unknown-linux-musleabihf' "${target_file}"
       - name: Install V8 host sysroot
         run: python3 build/linux/sysroot_scripts/install-sysroot.py --arch=amd64
+      - name: Configure ARMv7 musl bindgen sysroot
+        shell: bash
+        run: |
+          set -euo pipefail
+          zig_lib_dir="$(zig env | python3 -c 'import json, sys; print(json.load(sys.stdin)["lib_dir"])')"
+          zig_libc_dir="${zig_lib_dir}/libc"
+          test -d "${zig_libc_dir}/include"
+          sysroot="${RUNNER_TEMP}/armv7-musl-sysroot"
+          mkdir -p "${sysroot}/usr"
+          ln -s "${zig_libc_dir}/include" "${sysroot}/usr/include"
+          echo "RUSTY_V8_MUSL_SYSROOT=${sysroot}" >> "${GITHUB_ENV}"
       - name: Build ARMv7 musl release artifacts
         shell: bash
         run: |

@@ -248,15 +248,25 @@ fn build_binding() {
         clang_args.push(format!("-isystem{}/usr/include", sysroot.display()));
       }
       clang_args.push(format!("-D__ANDROID_API__={api_level}"));
-    } else if target_triple == "armv7-unknown-linux-gnueabihf" {
+    } else if matches!(
+      target_triple.as_str(),
+      "armv7-unknown-linux-gnueabihf" | "armv7-unknown-linux-musleabihf"
+    ) {
       clang_args.push(format!("--target={target_triple}"));
-      if let Ok(sysroot) = env::var("RUSTY_V8_TARGET_SYSROOT") {
+      let sysroot_var = if target_triple.ends_with("-musleabihf") {
+        "RUSTY_V8_MUSL_SYSROOT"
+      } else {
+        "RUSTY_V8_TARGET_SYSROOT"
+      };
+      if let Ok(sysroot) = env::var(sysroot_var) {
         clang_args.push(format!("--sysroot={sysroot}"));
-        // Make libclang use the same Debian cross toolchain as the V8 build.
-        // Without this, newer Clang versions can parse the target's C headers
-        // incompletely and libc++'s <cstdint> aliases become unresolved.
-        clang_args.push("--gcc-toolchain=/usr".to_string());
-        clang_args.push(format!("-isystem{sysroot}/include"));
+        if sysroot_var == "RUSTY_V8_TARGET_SYSROOT" {
+          // Make libclang use the same Debian cross toolchain as the V8 build.
+          // Without this, newer Clang versions can parse the target's C headers
+          // incompletely and libc++'s <cstdint> aliases become unresolved.
+          clang_args.push("--gcc-toolchain=/usr".to_string());
+          clang_args.push(format!("-isystem{sysroot}/include"));
+        }
       }
     }
   } else if target_os == "ios" {
