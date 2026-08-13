@@ -253,6 +253,13 @@ jobs:
           echo "CC_armv7_unknown_linux_musleabihf=${RUNNER_TEMP}/armv7-musl-cc" >> "${GITHUB_ENV}"
           echo "CXX_armv7_unknown_linux_musleabihf=${RUNNER_TEMP}/armv7-musl-cxx" >> "${GITHUB_ENV}"
           echo "LIBCLANG_PATH=/usr/lib/llvm-21/lib" >> "${GITHUB_ENV}"
+      - name: Register ARMv7 musl Rust target with GN
+        shell: bash
+        run: |
+          set -euo pipefail
+          target_file=build/rust/known-target-triples.txt
+          grep -Fxq 'thumbv7neon-unknown-linux-musleabihf' "${target_file}" || \
+            sed -i '/^thumbv7neon-unknown-linux-gnueabihf$/a thumbv7neon-unknown-linux-musleabihf' "${target_file}"
       - name: Install V8 host sysroot
         run: python3 build/linux/sysroot_scripts/install-sysroot.py --arch=amd64
       - name: Build ARMv7 musl release artifacts
