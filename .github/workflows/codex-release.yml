@@ -199,10 +199,17 @@ jobs:
           set -euo pipefail
           zig_lib_dir="$(zig env | python3 -c 'import json, sys; print(json.load(sys.stdin)["lib_dir"])')"
           zig_libc_dir="${zig_lib_dir}/libc"
-          test -d "${zig_libc_dir}/include"
+          musl_include="${zig_libc_dir}/musl/include"
+          arm_include="${zig_libc_dir}/include/arm-linux-musl"
+          linux_include="${zig_libc_dir}/include/arm-linux-any"
+          generic_linux_include="${zig_libc_dir}/include/any-linux-any"
+          test -d "${musl_include}" "${arm_include}" "${linux_include}" "${generic_linux_include}"
           sysroot="${RUNNER_TEMP}/armv7-musl-sysroot"
-          mkdir -p "${sysroot}/usr"
-          ln -s "${zig_libc_dir}/include" "${sysroot}/usr/include"
+          mkdir -p "${sysroot}/usr/include"
+          ln -s "${musl_include}"/* "${sysroot}/usr/include/"
+          ln -s "${arm_include}/bits" "${sysroot}/usr/include/bits"
+          ln -s "${linux_include}/asm" "${sysroot}/usr/include/asm"
+          ln -s "${generic_linux_include}/asm-generic" "${sysroot}/usr/include/asm-generic"
           echo "RUSTY_V8_MUSL_SYSROOT=${sysroot}" >> "${GITHUB_ENV}"
       - name: Build ARMv7 musl release artifacts
         shell: bash
