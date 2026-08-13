@@ -211,23 +211,13 @@ jobs:
           test -d "${generic_musl_include}"
           sysroot="${RUNNER_TEMP}/armv7-musl-sysroot"
           mkdir -p "${sysroot}/usr/include"
-          ln -s "${musl_include}"/* "${sysroot}/usr/include/"
-          ln -s "${arm_include}/bits" "${sysroot}/usr/include/bits"
-          for header in "${generic_musl_include}/bits"/*; do
-            name="$(basename "${header}")"
-            if [[ ! -e "${sysroot}/usr/include/bits/${name}" ]]; then
-              ln -s "${header}" "${sysroot}/usr/include/bits/${name}"
-            fi
-          done
-          ln -s "${linux_include}/asm" "${sysroot}/usr/include/asm"
-          for header in "${generic_linux_include}/asm"/*; do
-            name="$(basename "${header}")"
-            if [[ ! -e "${sysroot}/usr/include/asm/${name}" ]]; then
-              ln -s "${header}" "${sysroot}/usr/include/asm/${name}"
-            fi
-          done
-          ln -s "${generic_linux_include}/asm-generic" "${sysroot}/usr/include/asm-generic"
-          ln -s "${generic_linux_include}/linux" "${sysroot}/usr/include/linux"
+          # Assemble the same layered include tree used by Zig's musl target.
+          # Generic headers must be present first; target-specific headers then
+          # override them where both layers provide a file.
+          cp -a "${generic_musl_include}/." "${sysroot}/usr/include/"
+          cp -a "${generic_linux_include}/." "${sysroot}/usr/include/"
+          cp -a "${arm_include}/." "${sysroot}/usr/include/"
+          cp -a "${musl_include}/." "${sysroot}/usr/include/"
           echo "RUSTY_V8_MUSL_SYSROOT=${sysroot}" >> "${GITHUB_ENV}"
       - name: Build ARMv7 musl release artifacts
         shell: bash
