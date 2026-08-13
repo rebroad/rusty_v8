@@ -203,14 +203,22 @@ jobs:
           arm_include="${zig_libc_dir}/include/arm-linux-musl"
           linux_include="${zig_libc_dir}/include/arm-linux-any"
           generic_linux_include="${zig_libc_dir}/include/any-linux-any"
+          generic_musl_include="${zig_libc_dir}/include/generic-musl"
           test -d "${musl_include}"
           test -d "${arm_include}"
           test -d "${linux_include}"
           test -d "${generic_linux_include}"
+          test -d "${generic_musl_include}"
           sysroot="${RUNNER_TEMP}/armv7-musl-sysroot"
           mkdir -p "${sysroot}/usr/include"
           ln -s "${musl_include}"/* "${sysroot}/usr/include/"
           ln -s "${arm_include}/bits" "${sysroot}/usr/include/bits"
+          for header in "${generic_musl_include}/bits"/*; do
+            name="$(basename "${header}")"
+            if [[ ! -e "${sysroot}/usr/include/bits/${name}" ]]; then
+              ln -s "${header}" "${sysroot}/usr/include/bits/${name}"
+            fi
+          done
           ln -s "${linux_include}/asm" "${sysroot}/usr/include/asm"
           ln -s "${generic_linux_include}/asm-generic" "${sysroot}/usr/include/asm-generic"
           echo "RUSTY_V8_MUSL_SYSROOT=${sysroot}" >> "${GITHUB_ENV}"
