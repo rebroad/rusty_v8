@@ -35,75 +35,6 @@ jobs:
           fi
           echo "release_tag=${expected_tag}" >> "${GITHUB_OUTPUT}"
 
-  build-x64-musl:
-    name: Build sandbox x86_64 musl
-    needs: validate-release-tag
-    runs-on: ubuntu-22.04
-    timeout-minutes: 240
-    env:
-      V8_FROM_SOURCE: true
-      TARGET: x86_64-unknown-linux-musl
-      LIB_NAME: librusty_v8_ptrcomp_sandbox_release_x86_64-unknown-linux-musl.a.gz
-      BINDING_NAME: src_binding_ptrcomp_sandbox_release_x86_64-unknown-linux-musl.rs
-    steps:
-      - uses: actions/checkout@v6
-        with:
-          submodules: recursive
-      - uses: dsherret/rust-toolchain-file@v1
-      - uses: actions/setup-python@v6
-        with:
-          python-version: "3.11"
-      - name: Install musl toolchain and sysroot
-        run: |
-          set -euo pipefail
-          rustup target add "${TARGET}"
-          sudo apt-get update -y
-          curl -fsSL https://apt.llvm.org/llvm-snapshot.gpg.key \
-            | gpg --dearmor \
-            | sudo tee /etc/apt/trusted.gpg.d/llvm-snapshot.gpg >/dev/null
-          echo "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-21 main" \
-            | sudo tee /etc/apt/sources.list.d/llvm-toolchain-jammy-21.list >/dev/null
-          sudo apt-get update -y
-          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-            clang-21 libclang-21-dev musl-tools musl-dev
-          SYSROOT="${HOME}/musl-sysroot"
-          mkdir -p "${SYSROOT}/usr/include" "${SYSROOT}/usr/lib"
-          cp -a /usr/include/x86_64-linux-musl/. "${SYSROOT}/usr/include/"
-          cp -a /usr/lib/x86_64-linux-musl/. "${SYSROOT}/usr/lib/"
-          cp -a /usr/include/linux /usr/include/asm-generic /usr/include/x86_64-linux-gnu/asm "${SYSROOT}/usr/include/"
-          cp -a /usr/include/x86_64-linux-gnu/bits/wordsize.h "${SYSROOT}/usr/include/bits/"
-          cat > "${SYSROOT}/usr/include/sys/cdefs.h" <<'EOF'
-          #ifndef _RUSTY_V8_MUSL_COMPAT_CDEFS_H
-          #define _RUSTY_V8_MUSL_COMPAT_CDEFS_H
-          #define __GNUC_PREREQ(maj, min) ((__GNUC__ << 16) + __GNUC_MINOR__ >= ((maj) << 16) + (min))
-          #define __glibc_clang_prereq(maj, min) (__clang_major__ > (maj) || (__clang_major__ == (maj) && __clang_minor__ >= (min)))
-          #define __glibc_has_attribute(attr) __has_attribute(attr)
-          #define __glibc_has_builtin(name) __has_builtin(name)
-          #define __glibc_has_extension(ext) __has_extension(ext)
-          #endif
-          EOF
-          echo "CARGO_TARGET_X86_64_UNKNOWN_LINUX_MUSL_LINKER=musl-gcc" >> "${GITHUB_ENV}"
-          echo "CC_x86_64_unknown_linux_musl=musl-gcc" >> "${GITHUB_ENV}"
-          echo "RUSTY_V8_MUSL_SYSROOT=${SYSROOT}" >> "${GITHUB_ENV}"
-          echo "LIBCLANG_PATH=/usr/lib/llvm-21/lib" >> "${GITHUB_ENV}"
-      - name: Install V8 sysroot
-        run: python3 build/linux/sysroot_scripts/install-sysroot.py --arch=amd64
-      - name: Build sandbox release artifacts
-        run: |
-          set -euo pipefail
-          cargo build -vv --locked --release --target "${TARGET}" --features v8_enable_sandbox
-          gzip -9c "target/${TARGET}/release/gn_out/obj/librusty_v8.a" > "${LIB_NAME}"
-          cp "target/${TARGET}/release/gn_out/src_binding.rs" "${BINDING_NAME}"
-          sha256sum "${LIB_NAME}" "${BINDING_NAME}" > "rusty_v8_ptrcomp_sandbox_release_${TARGET}.sha256"
-      - uses: actions/upload-artifact@v6
-        with:
-          name: codex-x64-musl-assets
-          path: |
-            ${{ env.LIB_NAME }}
-            ${{ env.BINDING_NAME }}
-            rusty_v8_ptrcomp_sandbox_release_${{ env.TARGET }}.sha256
-          if-no-files-found: error
-
   build-android:
     name: Build sandbox Android arm64
     needs: validate-release-tag
@@ -287,7 +218,6 @@ jobs:
     name: Publish Codex Rusty V8 assets
     needs:
       - validate-release-tag
-      - build-x64-musl
       - build-android
       - build-armv7-musl
     runs-on: ubuntu-22.04
@@ -316,9 +246,6 @@ jobs:
             librusty_v8_ptrcomp_sandbox_release_aarch64-linux-android.a.gz
             src_binding_ptrcomp_sandbox_release_aarch64-linux-android.rs
             rusty_v8_ptrcomp_sandbox_release_aarch64-linux-android.sha256
-            librusty_v8_ptrcomp_sandbox_release_x86_64-unknown-linux-musl.a.gz
-            src_binding_ptrcomp_sandbox_release_x86_64-unknown-linux-musl.rs
-            rusty_v8_ptrcomp_sandbox_release_x86_64-unknown-linux-musl.sha256
             librusty_v8_release_aarch64-linux-android.a.gz
             src_binding_release_aarch64-linux-android.rs
             rusty_v8_release_aarch64-linux-android.sha256
