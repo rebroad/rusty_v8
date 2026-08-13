@@ -238,8 +238,6 @@ jobs:
           sudo apt-get update -y
           sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
             clang-21 libclang-21-dev
-          sysroot="$(zig cc -target arm-linux-musleabihf -print-sysroot)"
-          test -d "${sysroot}"
           cat > "${RUNNER_TEMP}/armv7-musl-cc" <<'EOF'
           #!/usr/bin/env bash
           set -euo pipefail
@@ -251,10 +249,9 @@ jobs:
           exec zig c++ -target arm-linux-musleabihf "$@"
           EOF
           chmod +x "${RUNNER_TEMP}/armv7-musl-cc" "${RUNNER_TEMP}/armv7-musl-cxx"
-          echo "CARGO_TARGET_ARMV7_UNKNOWN_LINUX_MUSLEABIHF_LINKER=${RUNNER_TEMP}/armv7-musl-cxx" >> "${GITHUB_ENV}"
+          echo "CARGO_TARGET_ARMV7_UNKNOWN_LINUX_MUSLEABIHF_LINKER=${RUNNER_TEMP}/armv7-musl-cc" >> "${GITHUB_ENV}"
           echo "CC_armv7_unknown_linux_musleabihf=${RUNNER_TEMP}/armv7-musl-cc" >> "${GITHUB_ENV}"
           echo "CXX_armv7_unknown_linux_musleabihf=${RUNNER_TEMP}/armv7-musl-cxx" >> "${GITHUB_ENV}"
-          echo "RUSTY_V8_MUSL_SYSROOT=${sysroot}" >> "${GITHUB_ENV}"
           echo "LIBCLANG_PATH=/usr/lib/llvm-21/lib" >> "${GITHUB_ENV}"
       - name: Install V8 host sysroot
         run: python3 build/linux/sysroot_scripts/install-sysroot.py --arch=amd64
