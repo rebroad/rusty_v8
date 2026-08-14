@@ -82,17 +82,20 @@ mkdir -p "$include_dir"
 # them where both layers provide a file.
 cp -a "${generic_musl_include}/." "$include_dir/"
 cp -a "${generic_linux_include}/." "$include_dir/"
+cp -a "${linux_include}/." "$include_dir/"
 cp -a "${arm_include}/." "$include_dir/"
 cp -a "${musl_include}/." "$include_dir/"
 # Zig keeps the hard-float ARM ABI header under its explicit name, while Linux's
 # generic unistd.h includes the conventional name.
-ln -s "unistd-eabi.h" "${include_dir}/asm/unistd.h"
+if [[ ! -e "${include_dir}/asm/unistd.h" ]]; then
+  ln -s "unistd-eabi.h" "${include_dir}/asm/unistd.h"
+fi
 
 fixture="${output_dir}/header-smoke-test.cc"
 cat > "$fixture" <<'EOF'
 #include <features.h>
 #include <stdint.h>
-#include <bits/wordsize.h>
+#include <bits/limits.h>
 #include <asm/bitsperlong.h>
 #include <linux/futex.h>
 #include <linux/unistd.h>
