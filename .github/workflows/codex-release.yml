@@ -218,6 +218,9 @@ jobs:
           cp -a "${generic_linux_include}/." "${sysroot}/usr/include/"
           cp -a "${arm_include}/." "${sysroot}/usr/include/"
           cp -a "${musl_include}/." "${sysroot}/usr/include/"
+          # Zig keeps the hard-float ARM ABI header under its explicit name,
+          # while Linux's generic unistd.h includes the conventional name.
+          ln -s "unistd-eabi.h" "${sysroot}/usr/include/asm/unistd.h"
           echo "RUSTY_V8_MUSL_SYSROOT=${sysroot}" >> "${GITHUB_ENV}"
       - name: Build ARMv7 musl release artifacts
         shell: bash
