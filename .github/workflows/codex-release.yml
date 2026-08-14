@@ -197,30 +197,10 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          zig_lib_dir="$(zig env | python3 -c 'import json, sys; print(json.load(sys.stdin)["lib_dir"])')"
-          zig_libc_dir="${zig_lib_dir}/libc"
-          musl_include="${zig_libc_dir}/musl/include"
-          arm_include="${zig_libc_dir}/include/arm-linux-musl"
-          linux_include="${zig_libc_dir}/include/arm-linux-any"
-          generic_linux_include="${zig_libc_dir}/include/any-linux-any"
-          generic_musl_include="${zig_libc_dir}/include/generic-musl"
-          test -d "${musl_include}"
-          test -d "${arm_include}"
-          test -d "${linux_include}"
-          test -d "${generic_linux_include}"
-          test -d "${generic_musl_include}"
           sysroot="${RUNNER_TEMP}/armv7-musl-sysroot"
-          mkdir -p "${sysroot}/usr/include"
-          # Assemble the same layered include tree used by Zig's musl target.
-          # Generic headers must be present first; target-specific headers then
-          # override them where both layers provide a file.
-          cp -a "${generic_musl_include}/." "${sysroot}/usr/include/"
-          cp -a "${generic_linux_include}/." "${sysroot}/usr/include/"
-          cp -a "${arm_include}/." "${sysroot}/usr/include/"
-          cp -a "${musl_include}/." "${sysroot}/usr/include/"
-          # Zig keeps the hard-float ARM ABI header under its explicit name,
-          # while Linux's generic unistd.h includes the conventional name.
-          ln -s "unistd-eabi.h" "${sysroot}/usr/include/asm/unistd.h"
+          bash tools/armv7_musl_sysroot_smoke_test.sh \
+            --output-dir "${sysroot}" \
+            --clang /usr/bin/clang++-21
           echo "RUSTY_V8_MUSL_SYSROOT=${sysroot}" >> "${GITHUB_ENV}"
       - name: Build ARMv7 musl release artifacts
         shell: bash
