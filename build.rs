@@ -58,6 +58,12 @@ fn main() {
     println!("cargo:rerun-if-env-changed={env}");
   }
 
+  if let Ok(target) = env::var("TARGET") {
+    let target_key = target.to_ascii_uppercase().replace('-', "_");
+    println!("cargo:rerun-if-env-changed=RUSTY_V8_ARCHIVE_{target_key}");
+    println!("cargo:rerun-if-env-changed=RUSTY_V8_SRC_BINDING_PATH_{target_key}");
+  }
+
   // Detect if trybuild tests are being compiled.
   let is_trybuild = env::var_os("DENO_TRYBUILD").is_some();
 
@@ -755,7 +761,7 @@ fn static_lib_name(suffix: &str) -> String {
 }
 
 fn static_lib_url() -> String {
-  if let Ok(custom_archive) = env::var("RUSTY_V8_ARCHIVE") {
+  if let Some(custom_archive) = target_env_override("RUSTY_V8_ARCHIVE") {
     return custom_archive;
   }
   let default_base = "https://github.com/denoland/rusty_v8/releases/download";
@@ -769,6 +775,14 @@ fn static_lib_url() -> String {
     "{base}/v{version}/{}.gz",
     static_lib_name(&format!("{features}_{profile}_{target}")),
   )
+}
+
+fn target_env_override(base: &str) -> Option<String> {
+  let target = env::var("TARGET").ok()?;
+  let target_key = target.to_ascii_uppercase().replace('-', "_");
+  env::var(format!("{base}_{target_key}"))
+    .ok()
+    .or_else(|| env::var(base).ok())
 }
 
 fn static_lib_path() -> PathBuf {
@@ -1059,7 +1073,7 @@ fn print_link_flags() {
 }
 
 fn print_prebuilt_src_binding_path() {
-  if let Ok(binding) = env::var("RUSTY_V8_SRC_BINDING_PATH") {
+  if let Some(binding) = target_env_override("RUSTY_V8_SRC_BINDING_PATH") {
     println!("cargo:rustc-env=RUSTY_V8_SRC_BINDING_PATH={binding}");
     return;
   }
