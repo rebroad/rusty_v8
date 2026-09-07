@@ -61,7 +61,9 @@ fn main() {
   if let Ok(target) = env::var("TARGET") {
     let target_key = target.to_ascii_uppercase().replace('-', "_");
     println!("cargo:rerun-if-env-changed=RUSTY_V8_ARCHIVE_{target_key}");
-    println!("cargo:rerun-if-env-changed=RUSTY_V8_SRC_BINDING_PATH_{target_key}");
+    println!(
+      "cargo:rerun-if-env-changed=RUSTY_V8_SRC_BINDING_PATH_{target_key}"
+    );
   }
 
   // Detect if trybuild tests are being compiled.
@@ -329,8 +331,18 @@ fn build_binding() {
     out_path.display()
   );
   bindings
-    .write_to_file(out_path)
+    .write_to_file(&out_path)
     .expect("Couldn't write bindings!");
+  // Normalize newer bindgen enum constant names for the stable Rust API.
+  let binding_text =
+    fs::read_to_string(&out_path).expect("Could not read bindings");
+  if binding_text.contains("pub const WriteFlags_kNullTerminate")
+    && !binding_text.contains("v8_String_WriteFlags_kNullTerminate")
+  {
+    let binding_text = binding_text
+      .replace("pub const WriteFlags_", "pub const v8_String_WriteFlags_");
+    fs::write(out_path, binding_text).expect("Could not normalize bindings");
+  }
 }
 
 fn build_v8(is_asan: bool) {
